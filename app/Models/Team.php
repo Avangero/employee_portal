@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Team extends Model {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'leader_id'];
+    protected $fillable = ['name', 'leader_id'];
 
     public function leader(): BelongsTo {
         return $this->belongsTo(User::class, 'leader_id');
@@ -22,5 +22,9 @@ class Team extends Model {
 
     public function projects(): HasMany {
         return $this->hasMany(Project::class);
+    }
+
+    public function users(): \Illuminate\Database\Eloquent\Relations\HasMany {
+        return $this->hasMany(User::class);
     }
 }

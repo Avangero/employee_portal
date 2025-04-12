@@ -15,6 +15,8 @@ return new class extends Migration {
             $table->unsignedBigInteger('team_id')->nullable();
             $table->unsignedBigInteger('manager_id')->nullable();
             $table->unsignedBigInteger('role_id')->nullable();
+            $table->string('telegram_id')->nullable()->unique();
+            $table->boolean('is_reviewer')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

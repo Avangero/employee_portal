@@ -18,6 +18,14 @@ class RouteServiceProvider extends ServiceProvider {
      */
     public const HOME = '/dashboard';
 
+    public static function redirectTo() {
+        if (auth()->check()) {
+            return auth()->user()->getHomeRoute();
+        }
+
+        return static::HOME;
+    }
+
     /**
      * Define your route model bindings, pattern filters, and other route configuration.
      */

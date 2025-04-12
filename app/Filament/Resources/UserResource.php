@@ -36,7 +36,11 @@ class UserResource extends Resource {
             ]),
             Forms\Components\Section::make('Должность и команда')->schema([
                 Forms\Components\TextInput::make('position')->label('Должность')->maxLength(255),
-                Forms\Components\Select::make('team_id')->label('Команда')->relationship('team', 'name'),
+                Forms\Components\Select::make('team_id')
+                    ->label('Команда')
+                    ->relationship('team', 'name')
+                    ->searchable()
+                    ->preload(),
                 Forms\Components\Select::make('manager_id')
                     ->label('Руководитель')
                     ->relationship(
@@ -44,15 +48,27 @@ class UserResource extends Resource {
                         'first_name',
                         fn(Builder $query) => $query->whereHas('role', fn($q) => $q->where('slug', 'manager')),
                     )
-                    ->getOptionLabelFromRecordUsing(fn(User $record) => "{$record->first_name} {$record->last_name}"),
-                Forms\Components\Select::make('role_id')->label('Роль')->relationship('role', 'name')->required(),
-            ]),
-            Forms\Components\Section::make('Проекты')->schema([
-                Forms\Components\Select::make('projects')
-                    ->label('Проекты')
-                    ->relationship('projects', 'name')
-                    ->multiple()
+                    ->getOptionLabelFromRecordUsing(
+                        fn($record) => $record ? "{$record->first_name} {$record->last_name}" : '',
+                    )
+                    ->searchable()
                     ->preload(),
+                Forms\Components\Select::make('role_id')
+                    ->label('Роль')
+                    ->relationship('role', 'name')
+                    ->required()
+                    ->searchable()
+                    ->preload(),
+            ]),
+            Forms\Components\Section::make('Дополнительная информация')->schema([
+                Forms\Components\Toggle::make('is_reviewer')
+                    ->label('Ревьювер')
+                    ->helperText('Пользователь будет получать уведомления о новых Pull Request-ах в своей команде')
+                    ->default(false),
+                Forms\Components\Placeholder::make('has_telegram')
+                    ->label('Telegram для Pull Request-ов')
+                    ->content(fn(?User $record) => $record?->has_telegram ? '✅ Подключен' : '❌ Не подключен')
+                    ->helperText('Статус подключения Telegram бота. Пользователь должен авторизоваться через бота.'),
             ]),
         ]);
     }
@@ -67,10 +83,32 @@ class UserResource extends Resource {
                 Tables\Columns\TextColumn::make('team.name')->label('Команда')->searchable(),
                 Tables\Columns\TextColumn::make('manager.full_name')->label('Руководитель')->searchable(),
                 Tables\Columns\TextColumn::make('role.name')->label('Роль')->searchable(),
+                Tables\Columns\IconColumn::make('is_reviewer')->label('Ревьювер')->boolean()->sortable(),
+                Tables\Columns\IconColumn::make('has_telegram')
+                    ->label('Telegram')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger')
+                    ->tooltip('Статус подключения Telegram бота')
+                    ->sortable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('role')->label('Роль')->relationship('role', 'name'),
                 Tables\Filters\SelectFilter::make('team')->label('Команда')->relationship('team', 'name'),
+                Tables\Filters\TernaryFilter::make('is_reviewer')
+                    ->label('Ревьювер')
+                    ->boolean()
+                    ->trueLabel('Да')
+                    ->falseLabel('Нет')
+                    ->placeholder('Все'),
+                Tables\Filters\TernaryFilter::make('has_telegram')
+                    ->label('Telegram подключен')
+                    ->boolean()
+                    ->trueLabel('Да')
+                    ->falseLabel('Нет')
+                    ->placeholder('Все'),
             ])
             ->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);

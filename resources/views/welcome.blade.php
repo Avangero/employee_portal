@@ -62,7 +62,7 @@
                     <div class="overflow-hidden">
                         <div id="carousel" class="flex transition-transform duration-500 ease-in-out">
                             <!-- Card 1 -->
-                            <div class="min-w-full md:min-w-[33.333%] p-4">
+                            <div class="w-full md:w-1/3 flex-shrink-0 p-4">
                                 <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full border border-gray-100">
                                     <div class="p-6">
                                         <div class="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
@@ -77,7 +77,7 @@
                             </div>
 
                             <!-- Card 2 -->
-                            <div class="min-w-full md:min-w-[33.333%] p-4">
+                            <div class="w-full md:w-1/3 flex-shrink-0 p-4">
                                 <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full border border-gray-100">
                                     <div class="p-6">
                                         <div class="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
@@ -92,7 +92,7 @@
                             </div>
 
                             <!-- Card 3 -->
-                            <div class="min-w-full md:min-w-[33.333%] p-4">
+                            <div class="w-full md:w-1/3 flex-shrink-0 p-4">
                                 <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full border border-gray-100">
                                     <div class="p-6">
                                         <div class="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
@@ -107,7 +107,7 @@
                             </div>
 
                             <!-- Card 4 -->
-                            <div class="min-w-full md:min-w-[33.333%] p-4">
+                            <div class="w-full md:w-1/3 flex-shrink-0 p-4">
                                 <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full border border-gray-100">
                                     <div class="p-6">
                                         <div class="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
@@ -122,7 +122,7 @@
                             </div>
 
                             <!-- Card 5 -->
-                            <div class="min-w-full md:min-w-[33.333%] p-4">
+                            <div class="w-full md:w-1/3 flex-shrink-0 p-4">
                                 <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full border border-gray-100">
                                     <div class="p-6">
                                         <div class="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
@@ -137,7 +137,7 @@
                             </div>
 
                             <!-- Card 6 -->
-                            <div class="min-w-full md:min-w-[33.333%] p-4">
+                            <div class="w-full md:w-1/3 flex-shrink-0 p-4">
                                 <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full border border-gray-100">
                                     <div class="p-6">
                                         <div class="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
@@ -167,41 +167,49 @@
 
                     <!-- Indicators -->
                     <div class="flex justify-center mt-6 space-x-2">
-                        <button class="w-2.5 h-2.5 rounded-full bg-indigo-600 indicator active" data-index="0"></button>
-                        <button class="w-2.5 h-2.5 rounded-full bg-gray-300 indicator" data-index="1"></button>
-                        <button class="w-2.5 h-2.5 rounded-full bg-gray-300 indicator" data-index="2"></button>
+                        @php
+                            $totalCards = 4; // Общее количество карточек в карусели
+                            $totalIndicators = $totalCards; // Один индикатор для каждой карточки
+                        @endphp
+                        @for ($i = 0; $i < $totalIndicators; $i++)
+                            <button class="w-2.5 h-2.5 rounded-full bg-gray-300 indicator" data-index="{{ $i }}"></button>
+                        @endfor
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Footer -->
-        <footer class="bg-white">
-            <div class="mx-auto max-w-7xl px-6 py-12 md:flex md:items-center md:justify-between lg:px-8">
-                <div class="mt-8 md:order-1 md:mt-0">
-                    <p class="text-center text-xs leading-5 text-gray-500">&copy; 2024 Employee Portal. Все права защищены.</p>
-                </div>
-            </div>
-        </footer>
-
         <!-- Carousel Script -->
         <script>
             document.addEventListener('DOMContentLoaded', function() {
+                // Получаем элементы карусели
                 const carousel = document.getElementById('carousel');
                 const prevBtn = document.getElementById('prevBtn');
                 const nextBtn = document.getElementById('nextBtn');
                 const indicators = document.querySelectorAll('.indicator');
+                const cards = document.querySelectorAll('#carousel > div');
 
-                let currentIndex = 0;
-                const cardWidth = 100; // 100%
-                const totalCards = 6; // Total number of cards
-                const cardsPerView = window.innerWidth >= 768 ? 3 : 1; // 3 cards on desktop, 1 on mobile
-                const maxIndex = totalCards - cardsPerView;
+                // Настройки карусели
+                const totalCards = cards.length - 2;
+                let currentCard = 0;
+                let cardsPerView = window.innerWidth >= 768 ? 3 : 1;
 
-                // Update indicators
-                function updateIndicators() {
+                // Функция для перемещения карусели
+                function moveCarousel(cardIndex) {
+                    // Ограничиваем индекс карточки допустимыми значениями
+                    if (cardIndex < 0) cardIndex = totalCards - 1;
+                    if (cardIndex >= totalCards) cardIndex = 0;
+
+                    // Обновляем текущую карточку
+                    currentCard = cardIndex;
+
+                    // Рассчитываем смещение (каждая карточка = 100% / cardsPerView)
+                    const offset = currentCard * (100 / cardsPerView);
+                    carousel.style.transform = `translateX(-${offset}%)`;
+
+                    // Обновляем индикаторы
                     indicators.forEach((indicator, index) => {
-                        if (index === currentIndex) {
+                        if (index === currentCard) {
                             indicator.classList.remove('bg-gray-300');
                             indicator.classList.add('bg-indigo-600');
                         } else {
@@ -211,53 +219,33 @@
                     });
                 }
 
-                // Move carousel
-                function moveCarousel() {
-                    const offset = currentIndex * (cardWidth / cardsPerView);
-                    carousel.style.transform = `translateX(-${offset}%)`;
-                    updateIndicators();
-                }
+                // Инициализируем карусель
+                moveCarousel(0);
 
-                // Event listeners
-                prevBtn.addEventListener('click', () => {
-                    if (currentIndex > 0) {
-                        currentIndex--;
-                    } else {
-                        // Если мы в начале, переходим в конец
-                        currentIndex = maxIndex;
-                    }
-                    moveCarousel();
+                // Обработчики событий
+                prevBtn.addEventListener('click', function() {
+                    moveCarousel(currentCard - 1);
                 });
 
-                nextBtn.addEventListener('click', () => {
-                    if (currentIndex < maxIndex) {
-                        currentIndex++;
-                    } else {
-                        // Если мы в конце, переходим в начало
-                        currentIndex = 0;
-                    }
-                    moveCarousel();
+                nextBtn.addEventListener('click', function() {
+                    moveCarousel(currentCard + 1);
                 });
 
-                // Indicator click
+                // Обработчики для индикаторов
                 indicators.forEach((indicator, index) => {
-                    indicator.addEventListener('click', () => {
-                        currentIndex = index;
-                        moveCarousel();
+                    indicator.addEventListener('click', function() {
+                        moveCarousel(index);
                     });
                 });
 
-                // Handle window resize
-                window.addEventListener('resize', () => {
-                    const newCardsPerView = window.innerWidth >= 768 ? 3 : 1;
-                    if (newCardsPerView !== cardsPerView) {
-                        currentIndex = 0;
-                        moveCarousel();
+                // Обработка изменения размера экрана
+                window.addEventListener('resize', function() {
+                    let newCardsPerView = window.innerWidth >= 768 ? 3 : 1;
+                    if (cardsPerView !== newCardsPerView) {
+                        cardsPerView = newCardsPerView;
+                        moveCarousel(currentCard);
                     }
                 });
-
-                // Initialize
-                moveCarousel();
             });
         </script>
     </body>

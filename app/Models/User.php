@@ -30,6 +30,8 @@ class User extends Authenticatable implements FilamentUser {
         'team_id',
         'manager_id',
         'role_id',
+        'telegram_id',
+        'is_reviewer',
     ];
 
     /**
@@ -47,12 +49,18 @@ class User extends Authenticatable implements FilamentUser {
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'is_reviewer' => 'boolean',
+        'has_telegram' => 'boolean',
     ];
 
-    protected $appends = ['name'];
+    protected $appends = ['name', 'has_telegram'];
 
     public function canAccessPanel(Panel $panel): bool {
-        return $this->role?->slug === 'administrator';
+        return $this->isAdministrator();
+    }
+
+    public function getHomeRoute(): string {
+        return '/admin';
     }
 
     public function getFilamentName(): string {
@@ -101,5 +109,21 @@ class User extends Authenticatable implements FilamentUser {
 
     public function getNameAttribute(): string {
         return $this->getFullNameAttribute();
+    }
+
+    public function pullRequests(): HasMany {
+        return $this->hasMany(PullRequest::class, 'author_id');
+    }
+
+    public function reviews(): HasMany {
+        return $this->hasMany(PullRequestReview::class, 'reviewer_id');
+    }
+
+    public function isReviewer(): bool {
+        return $this->is_reviewer;
+    }
+
+    public function getHasTelegramAttribute(): bool {
+        return !empty($this->telegram_id);
     }
 }
