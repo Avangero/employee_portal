@@ -5,23 +5,25 @@ namespace App\Telegram\Commands;
 use App\Services\TelegramAuthService;
 use Telegram\Bot\Commands\Command;
 
-class StartCommand extends Command {
+class StartCommand extends Command
+{
     protected string $name = 'start';
     protected string $description = 'Начать работу с ботом';
 
     protected TelegramAuthService $authService;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->authService = app(TelegramAuthService::class);
     }
 
-    public function handle() {
+    public function handle()
+    {
         $chatId = $this->getUpdate()->getMessage()->getChat()->getId();
 
         if ($this->authService->isAuthenticated($chatId)) {
             $this->replyWithMessage([
-                'text' =>
-                    "👋 С возвращением!\n\n" .
+                'text' => "👋 С возвращением!\n\n" .
                     'Отправьте мне ссылку на Pull Request, и я уведомлю всех ревьюверов в вашей команде.',
             ]);
 
@@ -29,8 +31,7 @@ class StartCommand extends Command {
         }
 
         $this->replyWithMessage([
-            'text' =>
-                "👋 Добро пожаловать в бот для ревью Pull Request-ов!\n\n" .
+            'text' => "👋 Добро пожаловать в бот для ревью Pull Request-ов!\n\n" .
                 "Для начала работы необходимо авторизоваться.\n" .
                 'Пожалуйста, введите ваш email:',
         ]);

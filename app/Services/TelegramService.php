@@ -9,14 +9,17 @@ use Illuminate\Support\Facades\Log;
 use Telegram\Bot\Api;
 use Telegram\Bot\Keyboard\Keyboard;
 
-class TelegramService {
+class TelegramService
+{
     protected Api $telegram;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->telegram = new Api(config('telegram.bot_token'));
     }
 
-    public function sendPullRequestToReviewers(PullRequest $pullRequest): void {
+    public function sendPullRequestToReviewers(PullRequest $pullRequest): void
+    {
         Log::info('Начинаем отправку PR ревьюверам', [
             'pull_request_id' => $pullRequest->id,
             'team_id' => $pullRequest->team_id,
@@ -45,7 +48,7 @@ class TelegramService {
             'count' => $reviewers->count(),
             'reviewers' => $reviewers
                 ->map(
-                    fn($r) => [
+                    fn ($r) => [
                         'id' => $r->id,
                         'name' => $r->name,
                         'telegram_id' => $r->telegram_id,
@@ -105,7 +108,7 @@ class TelegramService {
         string $status,
         ?string $comment = null,
     ): void {
-        if (!$pullRequest->author->telegram_id) {
+        if (! $pullRequest->author->telegram_id) {
             return;
         }
 
@@ -154,7 +157,8 @@ class TelegramService {
         ]);
     }
 
-    public function notifyReviewersAboutUpdate(PullRequest $pullRequest, string $type, ?string $comment = null): void {
+    public function notifyReviewersAboutUpdate(PullRequest $pullRequest, string $type, ?string $comment = null): void
+    {
         $message = match ($type) {
             'fixed' => "🔄 Автор внес изменения в Pull Request\nСсылка: {$pullRequest->url}",
             'disputed' => '❗️ Автор оспорил ваши замечания' .
@@ -181,7 +185,7 @@ class TelegramService {
             });
 
         // Получаем ID тех, чей последний статус - approved
-        $approvedReviewerIds = $reviewStatuses->filter(fn($status) => $status === 'approved')->keys()->toArray();
+        $approvedReviewerIds = $reviewStatuses->filter(fn ($status) => $status === 'approved')->keys()->toArray();
 
         // Получаем ID всех ревьюверов, которые уже оставляли комментарии
         $activeReviewerIds = $reviewStatuses->keys()->toArray();
@@ -229,7 +233,8 @@ class TelegramService {
         }
     }
 
-    public function requestReviewComment(int $chatId, int $pullRequestId): void {
+    public function requestReviewComment(int $chatId, int $pullRequestId): void
+    {
         $this->telegram->sendMessage([
             'chat_id' => $chatId,
             'text' => 'Пожалуйста, напишите комментарий к вашему решению:',
@@ -244,7 +249,8 @@ class TelegramService {
         ]);
     }
 
-    protected function notifyAllReviewersAboutApproval(PullRequest $pullRequest): void {
+    protected function notifyAllReviewersAboutApproval(PullRequest $pullRequest): void
+    {
         $reviewers = User::where('team_id', $pullRequest->team_id)
             ->where('is_reviewer', true)
             ->where('id', '!=', $pullRequest->author_id)

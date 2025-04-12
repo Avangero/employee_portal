@@ -6,13 +6,15 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class ProfileTest extends TestCase {
+class ProfileTest extends TestCase
+{
     use RefreshDatabase;
 
     /**
      * @test
      */
-    public function profile_page_is_displayed(): void {
+    public function profile_page_is_displayed(): void
+    {
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->get('/profile');
@@ -23,7 +25,8 @@ class ProfileTest extends TestCase {
     /**
      * @test
      */
-    public function profile_information_can_be_updated(): void {
+    public function profile_information_can_be_updated(): void
+    {
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->patch('/profile', [
@@ -43,7 +46,8 @@ class ProfileTest extends TestCase {
     /**
      * @test
      */
-    public function email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void {
+    public function email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
+    {
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->patch('/profile', [
@@ -59,7 +63,8 @@ class ProfileTest extends TestCase {
     /**
      * @test
      */
-    public function user_can_delete_their_account(): void {
+    public function user_can_delete_their_account(): void
+    {
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->delete('/profile', [
@@ -75,7 +80,8 @@ class ProfileTest extends TestCase {
     /**
      * @test
      */
-    public function correct_password_must_be_provided_to_delete_account(): void {
+    public function correct_password_must_be_provided_to_delete_account(): void
+    {
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)

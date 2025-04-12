@@ -9,7 +9,8 @@ use Illuminate\Http\Request;
 use Telegram\Bot\Api;
 use Telegram\Bot\Objects\Update;
 
-class TelegramLongPollCommand extends Command {
+class TelegramLongPollCommand extends Command
+{
     protected $signature = 'telegram:long-poll';
     protected $description = 'Start long polling for Telegram updates';
 
@@ -17,13 +18,15 @@ class TelegramLongPollCommand extends Command {
     protected Api $telegram;
     protected int $offset = -1;
 
-    public function __construct(TelegramWebhookController $controller) {
+    public function __construct(TelegramWebhookController $controller)
+    {
         parent::__construct();
         $this->controller = $controller;
         $this->telegram = new Api(config('telegram.bot_token'));
     }
 
-    public function handle() {
+    public function handle()
+    {
         $this->info('Starting Telegram long polling...');
 
         while (true) {
@@ -39,7 +42,7 @@ class TelegramLongPollCommand extends Command {
 
                 foreach ($updates as $update) {
                     $updateId = $update->get('update_id');
-                    if (!$updateId) {
+                    if (! $updateId) {
                         $this->error('Update ID is missing');
 
                         continue;

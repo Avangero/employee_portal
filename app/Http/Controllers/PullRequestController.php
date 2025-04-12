@@ -6,8 +6,10 @@ use App\Models\PullRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
-class PullRequestController extends Controller {
-    public function index(Request $request) {
+class PullRequestController extends Controller
+{
+    public function index(Request $request)
+    {
         $stats = [
             'total' => PullRequest::where('author_id', auth()->id())->count(),
             'pending' => PullRequest::where('author_id', auth()->id())
@@ -30,13 +32,12 @@ class PullRequestController extends Controller {
                 $date = Carbon::parse($pr->created_at);
 
                 return match ($groupBy) {
-                    'week' => 'Неделя ' .
-                        $date->weekOfYear .
-                        ' (' .
-                        $date->startOfWeek()->format('d.m.Y') .
-                        ' - ' .
-                        $date->endOfWeek()->format('d.m.Y') .
-                        ')',
+                    'week' => sprintf(
+                        'Неделя %d (%s - %s)',
+                        $date->weekOfYear,
+                        $date->startOfWeek()->format('d.m.Y'),
+                        $date->endOfWeek()->format('d.m.Y')
+                    ),
                     'month' => $date->translatedFormat('F Y'),
                     default => $date->format('d.m.Y'),
                 };
@@ -50,6 +51,11 @@ class PullRequestController extends Controller {
             return $count > 0 ? round($totalReturns / $count, 1) : 0;
         });
 
-        return view('pull-requests.index', compact('stats', 'pullRequests', 'groupBy', 'averageReturns'));
+        return view('pull-requests.index', [
+            'stats' => $stats,
+            'pullRequests' => $pullRequests,
+            'groupBy' => $groupBy,
+            'averageReturns' => $averageReturns,
+        ]);
     }
 }

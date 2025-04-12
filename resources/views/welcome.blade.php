@@ -31,11 +31,11 @@
                         Добро пожаловать в корпоративный портал. Здесь вы найдете всю необходимую информацию и инструменты для эффективной работы.
                     </p>
                     <div class="mt-10 flex items-center justify-center gap-x-6">
-                        @auth
+                    @auth
                             <a href="{{ url('/dashboard') }}" class="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Перейти в панель управления</a>
-                        @else
+                    @else
                             <a href="{{ route('login') }}" class="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Войти в систему</a>
-                        @endauth
+                    @endauth
                     </div>
                 </div>
             </div>
@@ -68,7 +68,7 @@
                                         <div class="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
                                             <svg class="h-6 w-6 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                 <path fill-rule="evenodd" d="M5.5 17a4.5 4.5 0 01-1.44-8.765 4.5 4.5 0 018.302-3.046 3.5 3.5 0 014.504 4.272A4 4 0 0115 17H5.5zm3.75-2.75a.75.75 0 001.5 0V9.66l1.95 2.1a.75.75 0 101.1-1.02l-3.25-3.5a.75.75 0 00-1.1 0l-3.25 3.5a.75.75 0 101.1 1.02l1.95-2.1v4.59z" clip-rule="evenodd" />
-                                            </svg>
+                                    </svg>
                                         </div>
                                         <h3 class="text-xl font-semibold text-gray-900 mb-2">Документы и файлы</h3>
                                         <p class="text-gray-600">Доступ к корпоративным документам, формам и шаблонам в любое время.</p>
@@ -83,7 +83,7 @@
                                         <div class="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
                                             <svg class="h-6 w-6 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                 <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
-                                            </svg>
+                            </svg>
                                         </div>
                                         <h3 class="text-xl font-semibold text-gray-900 mb-2">Безопасность</h3>
                                         <p class="text-gray-600">Защищенный доступ к корпоративным ресурсам и данным.</p>
@@ -98,7 +98,7 @@
                                         <div class="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
                                             <svg class="h-6 w-6 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                 <path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z" clip-rule="evenodd" />
-                                            </svg>
+                                    </svg>
                                         </div>
                                         <h3 class="text-xl font-semibold text-gray-900 mb-2">Коммуникации</h3>
                                         <p class="text-gray-600">Инструменты для эффективной коммуникации между сотрудниками.</p>
@@ -113,7 +113,7 @@
                                         <div class="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
                                             <svg class="h-6 w-6 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                 <path fill-rule="evenodd" d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" clip-rule="evenodd" />
-                                            </svg>
+                            </svg>
                                         </div>
                                         <h3 class="text-xl font-semibold text-gray-900 mb-2">Уведомления</h3>
                                         <p class="text-gray-600">Мгновенные уведомления о важных событиях и обновлениях.</p>
@@ -128,7 +128,7 @@
                                         <div class="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
                                             <svg class="h-6 w-6 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
-                                            </svg>
+                                    </svg>
                                         </div>
                                         <h3 class="text-xl font-semibold text-gray-900 mb-2">Календарь</h3>
                                         <p class="text-gray-600">Планирование встреч, мероприятий и управление расписанием.</p>
@@ -143,15 +143,15 @@
                                         <div class="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
                                             <svg class="h-6 w-6 text-indigo-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                 <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-                                            </svg>
+                            </svg>
                                         </div>
                                         <h3 class="text-xl font-semibold text-gray-900 mb-2">Профиль</h3>
                                         <p class="text-gray-600">Управление личной информацией и настройками аккаунта.</p>
                                     </div>
-                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
                     <!-- Navigation buttons -->
                     <button id="prevBtn" class="absolute left-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 z-10">

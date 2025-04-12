@@ -13,7 +13,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable implements FilamentUser {
+class User extends Authenticatable implements FilamentUser
+{
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
@@ -55,75 +56,93 @@ class User extends Authenticatable implements FilamentUser {
 
     protected $appends = ['name', 'has_telegram'];
 
-    public function canAccessPanel(Panel $panel): bool {
+    public function canAccessPanel(Panel $panel): bool
+    {
         return $this->isAdministrator();
     }
 
-    public function getHomeRoute(): string {
+    public function getHomeRoute(): string
+    {
         return '/admin';
     }
 
-    public function getFilamentName(): string {
+    public function getFilamentName(): string
+    {
         return $this->getFullNameAttribute();
     }
 
-    public function getAuthPasswordName(): string {
+    public function getAuthPasswordName(): string
+    {
         return 'password';
     }
 
-    public function team(): BelongsTo {
+    public function team(): BelongsTo
+    {
         return $this->belongsTo(Team::class);
     }
 
-    public function manager(): BelongsTo {
+    public function manager(): BelongsTo
+    {
         return $this->belongsTo(User::class, 'manager_id');
     }
 
-    public function subordinates(): HasMany {
+    public function subordinates(): HasMany
+    {
         return $this->hasMany(User::class, 'manager_id');
     }
 
-    public function role(): BelongsTo {
+    public function role(): BelongsTo
+    {
         return $this->belongsTo(Role::class);
     }
 
-    public function projects(): BelongsToMany {
+    public function projects(): BelongsToMany
+    {
         return $this->belongsToMany(Project::class);
     }
 
-    public function getFullNameAttribute(): string {
+    public function getFullNameAttribute(): string
+    {
         return "{$this->first_name} {$this->last_name}";
     }
 
-    public function isAdministrator(): bool {
+    public function isAdministrator(): bool
+    {
         return $this->role?->slug === 'administrator';
     }
 
-    public function isManager(): bool {
+    public function isManager(): bool
+    {
         return $this->role?->slug === 'manager';
     }
 
-    public function getFilamentAvatar(): ?string {
+    public function getFilamentAvatar(): ?string
+    {
         return null;
     }
 
-    public function getNameAttribute(): string {
+    public function getNameAttribute(): string
+    {
         return $this->getFullNameAttribute();
     }
 
-    public function pullRequests(): HasMany {
+    public function pullRequests(): HasMany
+    {
         return $this->hasMany(PullRequest::class, 'author_id');
     }
 
-    public function reviews(): HasMany {
+    public function reviews(): HasMany
+    {
         return $this->hasMany(PullRequestReview::class, 'reviewer_id');
     }
 
-    public function isReviewer(): bool {
+    public function isReviewer(): bool
+    {
         return $this->is_reviewer;
     }
 
-    public function getHasTelegramAttribute(): bool {
-        return !empty($this->telegram_id);
+    public function getHasTelegramAttribute(): bool
+    {
+        return ! empty($this->telegram_id);
     }
 }

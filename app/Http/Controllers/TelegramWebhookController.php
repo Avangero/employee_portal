@@ -16,12 +16,14 @@ use Illuminate\Support\Facades\Log;
 use Telegram\Bot\Api;
 use Telegram\Bot\Keyboard\Keyboard;
 
-class TelegramWebhookController extends Controller {
+class TelegramWebhookController extends Controller
+{
     protected TelegramService $telegramService;
     protected TelegramAuthService $authService;
     protected Api $telegram;
 
-    public function __construct(TelegramService $telegramService, TelegramAuthService $authService) {
+    public function __construct(TelegramService $telegramService, TelegramAuthService $authService)
+    {
         $this->telegramService = $telegramService;
         $this->authService = $authService;
         $this->telegram = new Api(config('telegram.bot_token'));
@@ -30,7 +32,8 @@ class TelegramWebhookController extends Controller {
         $this->telegram->addCommand(StartCommand::class);
     }
 
-    public function handle(Request $request) {
+    public function handle(Request $request)
+    {
         try {
             $update = json_decode($request->getContent(), true);
             if (empty($update)) {
@@ -60,11 +63,12 @@ class TelegramWebhookController extends Controller {
         }
     }
 
-    protected function handleMessage(array $message): JsonResponse {
+    protected function handleMessage(array $message): JsonResponse
+    {
         $chatId = $message['chat']['id'];
         $text = $message['text'] ?? null;
 
-        if (!$text) {
+        if (! $text) {
             return response()->json(['status' => 'error', 'message' => 'No text in message']);
         }
 
@@ -124,7 +128,7 @@ class TelegramWebhookController extends Controller {
         }
 
         // Проверяем аутентификацию для остальных действий
-        if (!$this->authService->isAuthenticated($chatId)) {
+        if (! $this->authService->isAuthenticated($chatId)) {
             $this->telegram->sendMessage([
                 'chat_id' => $chatId,
                 'text' => '❌ Вы не авторизованы. Используйте команду /start для авторизации.',
@@ -139,7 +143,7 @@ class TelegramWebhookController extends Controller {
             try {
                 $pullRequest = PullRequest::findOrFail($pendingDispute);
 
-                if (!$pullRequest->canBeReviewed()) {
+                if (! $pullRequest->canBeReviewed()) {
                     $this->telegram->sendMessage([
                         'chat_id' => $chatId,
                         'text' => '❌ Этот Pull Request уже полностью одобрен и не может быть изменен.',
@@ -177,8 +181,7 @@ class TelegramWebhookController extends Controller {
 
                         $this->telegram->sendMessage([
                             'chat_id' => $returnedByReviewer->telegram_id,
-                            'text' =>
-                                "⚠️ {$pullRequest->author->name} оспорил ваш возврат Pull Request:\n\n" .
+                            'text' => "⚠️ {$pullRequest->author->name} оспорил ваш возврат Pull Request:\n\n" .
                                 ($text ? "Комментарий:\n{$text}\n\n" : '') .
                                 "Ссылка: {$pullRequest->url}\n\n" .
                                 'Пожалуйста, проверьте его снова.',
@@ -189,8 +192,7 @@ class TelegramWebhookController extends Controller {
                     // Отправляем уведомление автору
                     $this->telegram->sendMessage([
                         'chat_id' => $chatId,
-                        'text' =>
-                            '✅ Ваше оспаривание принято. Ревьювер получит уведомление о необходимости повторной проверки.',
+                        'text' => '✅ Ваше оспаривание принято. Ревьювер получит уведомление о необходимости повторной проверки.',
                     ]);
 
                     cache()->forget("pending_dispute_{$chatId}");
@@ -224,7 +226,7 @@ class TelegramWebhookController extends Controller {
         if (filter_var($text, FILTER_VALIDATE_URL)) {
             Log::info('Processing Pull Request URL:', ['url' => $text, 'user_id' => $user->id]);
 
-            if (!$user->team_id) {
+            if (! $user->team_id) {
                 Log::warning('User has no team:', ['user_id' => $user->id]);
                 $this->telegram->sendMessage([
                     'chat_id' => $chatId,
@@ -269,8 +271,7 @@ class TelegramWebhookController extends Controller {
                     DB::rollBack();
                     $this->telegram->sendMessage([
                         'chat_id' => $chatId,
-                        'text' =>
-                            '❌ В вашей команде нет активных ревьюверов. Пожалуйста, обратитесь к администратору.',
+                        'text' => '❌ В вашей команде нет активных ревьюверов. Пожалуйста, обратитесь к администратору.',
                     ]);
 
                     return response()->json(['status' => 'error', 'message' => 'No reviewers available']);
@@ -312,7 +313,8 @@ class TelegramWebhookController extends Controller {
         return response()->json(['status' => 'ok', 'message' => 'Message ignored']);
     }
 
-    protected function handleAuthState(int $chatId, string $text, string $state): \Illuminate\Http\JsonResponse {
+    protected function handleAuthState(int $chatId, string $text, string $state): \Illuminate\Http\JsonResponse
+    {
         $result = match ($state) {
             TelegramAuthService::STATE_WAITING_EMAIL => $this->authService->handleEmail($chatId, $text),
             TelegramAuthService::STATE_WAITING_PASSWORD => $this->authService->handlePassword($chatId, $text),
@@ -327,13 +329,14 @@ class TelegramWebhookController extends Controller {
         return response()->json(['status' => $result['success'] ? 'ok' : 'error']);
     }
 
-    protected function handleCallback(array $callback): JsonResponse {
+    protected function handleCallback(array $callback): JsonResponse
+    {
         $chatId = $callback['from']['id'];
         $data = $callback['data'];
         $messageId = $callback['message']['message_id'];
 
         try {
-            if (!$this->authService->isAuthenticated($chatId)) {
+            if (! $this->authService->isAuthenticated($chatId)) {
                 $this->telegram->editMessageText([
                     'chat_id' => $chatId,
                     'message_id' => $messageId,
@@ -346,7 +349,7 @@ class TelegramWebhookController extends Controller {
             $user = $this->getUser($chatId);
 
             // Проверяем права только для действий ревьювера
-            if ((str_starts_with($data, 'approve_') || str_starts_with($data, 'reject_')) && !$user->is_reviewer) {
+            if ((str_starts_with($data, 'approve_') || str_starts_with($data, 'reject_')) && ! $user->is_reviewer) {
                 $this->telegram->editMessageText([
                     'chat_id' => $chatId,
                     'message_id' => $messageId,
@@ -404,16 +407,14 @@ class TelegramWebhookController extends Controller {
                         $this->telegram->editMessageText([
                             'chat_id' => $chatId,
                             'message_id' => $messageId,
-                            'text' =>
-                                '✅ Поздравляем! Ваш апрув стал последним необходимым, и Pull Request полностью одобрен.',
+                            'text' => '✅ Поздравляем! Ваш апрув стал последним необходимым, и Pull Request полностью одобрен.',
                         ]);
                     } else {
                         $remainingApprovals = $pullRequest->required_approvals - $pullRequest->approvals_count;
                         $this->telegram->editMessageText([
                             'chat_id' => $chatId,
                             'message_id' => $messageId,
-                            'text' =>
-                                "✅ Вы успешно апрувили Pull Request. Необходимо ещё {$remainingApprovals} " .
+                            'text' => "✅ Вы успешно апрувили Pull Request. Необходимо ещё {$remainingApprovals} " .
                                 ($remainingApprovals === 1 ? 'апрув' : 'апрува') .
                                 '.',
                         ]);
@@ -586,7 +587,8 @@ class TelegramWebhookController extends Controller {
         }
     }
 
-    protected function getUser(int $chatId): ?User {
+    protected function getUser(int $chatId): ?User
+    {
         return User::where('telegram_id', (string) $chatId)->first();
     }
 }

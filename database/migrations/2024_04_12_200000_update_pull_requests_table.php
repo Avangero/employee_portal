@@ -5,8 +5,10 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
-    public function up(): void {
+return new class extends Migration
+{
+    public function up(): void
+    {
         // Создаем новый тип ENUM для статусов
         DB::statement('DROP TYPE IF EXISTS pull_request_status_enum CASCADE');
         DB::statement("CREATE TYPE pull_request_status_enum AS ENUM (
@@ -41,7 +43,8 @@ return new class extends Migration {
         });
     }
 
-    public function down(): void {
+    public function down(): void
+    {
         // Создаем старый тип ENUM
         DB::statement('DROP TYPE IF EXISTS old_pull_request_status_enum CASCADE');
         DB::statement("CREATE TYPE old_pull_request_status_enum AS ENUM (

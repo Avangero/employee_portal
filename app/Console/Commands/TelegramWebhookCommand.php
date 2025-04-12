@@ -5,11 +5,13 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Telegram\Bot\Api;
 
-class TelegramWebhookCommand extends Command {
+class TelegramWebhookCommand extends Command
+{
     protected $signature = 'telegram:webhook {--remove : Remove webhook instead of setting it}';
     protected $description = 'Set or remove Telegram webhook';
 
-    public function handle() {
+    public function handle()
+    {
         $telegram = new Api(config('telegram.bot_token'));
 
         if ($this->option('remove')) {
@@ -21,7 +23,7 @@ class TelegramWebhookCommand extends Command {
 
         $url = config('telegram.webhook_url');
 
-        if (!$url) {
+        if (! $url) {
             $this->error('TELEGRAM_WEBHOOK_URL not set in .env');
 
             return;
