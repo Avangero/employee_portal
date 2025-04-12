@@ -147,7 +147,7 @@
                                         </div>
                                         <h3 class="text-xl font-semibold text-gray-900 mb-2">Профиль</h3>
                                         <p class="text-gray-600">Управление личной информацией и настройками аккаунта.</p>
-                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

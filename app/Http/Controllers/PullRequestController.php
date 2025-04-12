@@ -32,13 +32,8 @@ class PullRequestController extends Controller
                 $date = Carbon::parse($pr->created_at);
 
                 return match ($groupBy) {
-                    'week' => sprintf(
-                        'Неделя %d (%s - %s)',
-                        $date->weekOfYear,
-                        $date->startOfWeek()->format('d.m.Y'),
-                        $date->endOfWeek()->format('d.m.Y')
-                    ),
-                    'month' => $date->translatedFormat('F Y'),
+                    'week' => $this->formatWeekRange($date),
+                    'month' => $this->formatMonth($date),
                     default => $date->format('d.m.Y'),
                 };
             });
@@ -57,5 +52,45 @@ class PullRequestController extends Controller
             'groupBy' => $groupBy,
             'averageReturns' => $averageReturns,
         ]);
+    }
+
+    private function formatWeekRange(Carbon $date): string
+    {
+        $startOfWeek = $date->copy()->startOfWeek();
+        $endOfWeek = $date->copy()->endOfWeek();
+
+        // Получаем первый день месяца
+        $firstDayOfMonth = $startOfWeek->copy()->startOfMonth();
+
+        // Вычисляем номер недели в месяце
+        $weekNumber = 1;
+        while ($firstDayOfMonth->lt($startOfWeek)) {
+            $weekNumber++;
+            $firstDayOfMonth->addWeek();
+        }
+
+        // Если начало и конец недели в разных месяцах
+        if ($startOfWeek->format('m') !== $endOfWeek->format('m')) {
+            return sprintf(
+                '%d неделя %s-%s %s',
+                $weekNumber,
+                $startOfWeek->translatedFormat('F'),
+                $endOfWeek->translatedFormat('F'),
+                $startOfWeek->format('Y')
+            );
+        }
+
+        // Если в одном месяце
+        return sprintf(
+            '%d неделя %s %s',
+            $weekNumber,
+            $startOfWeek->translatedFormat('F'),
+            $startOfWeek->format('Y')
+        );
+    }
+
+    private function formatMonth(Carbon $date): string
+    {
+        return $date->translatedFormat('F Y');
     }
 }

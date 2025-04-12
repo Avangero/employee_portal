@@ -13,11 +13,17 @@ class PullRequest extends Model
 
     // Статусы PR
     public const STATUS_CREATED = 'created';
+
     public const STATUS_IN_REVIEW = 'in_review';
+
     public const STATUS_CHANGES_REQUESTED = 'changes_requested';
+
     public const STATUS_DISPUTED = 'disputed';
+
     public const STATUS_UPDATED = 'updated';
+
     public const STATUS_APPROVED = 'approved';
+
     public const STATUS_RETURNED = 'returned';
 
     protected $fillable = [

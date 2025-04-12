@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PullRequestController;
 use Illuminate\Support\Facades\Route;
@@ -25,9 +26,7 @@ Route::get('home', function () {
     ->middleware(['auth', 'verified'])
     ->name('home');
 
-Route::get('dashboard', function () {
-    return view('dashboard');
-})
+Route::get('dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
@@ -39,4 +38,4 @@ Route::middleware('auth')->group(function () {
     Route::get('pull-requests', [PullRequestController::class, 'index'])->name('pull-requests.index');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

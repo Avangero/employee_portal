@@ -8,6 +8,7 @@ use Telegram\Bot\Api;
 class TelegramWebhookCommand extends Command
 {
     protected $signature = 'telegram:webhook {--remove : Remove webhook instead of setting it}';
+
     protected $description = 'Set or remove Telegram webhook';
 
     public function handle()

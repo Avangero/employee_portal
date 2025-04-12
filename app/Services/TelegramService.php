@@ -114,11 +114,11 @@ class TelegramService
 
         $message = match ($status) {
             'approved' => "✅ Ваш Pull Request принял {$reviewerName}.\n\nСсылка: {$pullRequest->url}",
-            'changes_requested' => "🔁 {$reviewerName} запросил изменения" .
-                ($comment ? ":\n\n{$comment}" : '') .
+            'changes_requested' => "🔁 {$reviewerName} запросил изменения".
+                ($comment ? ":\n\n{$comment}" : '').
                 "\n\nСсылка: {$pullRequest->url}",
-            'returned' => "🔄 {$reviewerName} вернул Pull Request на доработку" .
-                ($comment ? ":\n\n{$comment}" : '') .
+            'returned' => "🔄 {$reviewerName} вернул Pull Request на доработку".
+                ($comment ? ":\n\n{$comment}" : '').
                 "\n\nСсылка: {$pullRequest->url}",
         };
 
@@ -161,14 +161,14 @@ class TelegramService
     {
         $message = match ($type) {
             'fixed' => "🔄 Автор внес изменения в Pull Request\nСсылка: {$pullRequest->url}",
-            'disputed' => '❗️ Автор оспорил ваши замечания' .
-                ($comment ? ":\n\n{$comment}" : '') .
+            'disputed' => '❗️ Автор оспорил ваши замечания'.
+                ($comment ? ":\n\n{$comment}" : '').
                 "\n\nСсылка: {$pullRequest->url}",
-            'returned' => '🔄 Pull Request возвращен на доработку' .
-                ($comment ? ":\n\n{$comment}" : '') .
+            'returned' => '🔄 Pull Request возвращен на доработку'.
+                ($comment ? ":\n\n{$comment}" : '').
                 "\n\nСсылка: {$pullRequest->url}",
-            'changes_requested' => '🔄 Запрошены изменения в Pull Request' .
-                ($comment ? ":\n\n{$comment}" : '') .
+            'changes_requested' => '🔄 Запрошены изменения в Pull Request'.
+                ($comment ? ":\n\n{$comment}" : '').
                 "\n\nСсылка: {$pullRequest->url}",
         };
 
@@ -257,8 +257,8 @@ class TelegramService
             ->get();
 
         $message =
-            "✅ Pull Request от {$pullRequest->author->name} полностью одобрен.\n" .
-            "Разработчик проверяет на деве.\n\n" .
+            "✅ Pull Request от {$pullRequest->author->name} полностью одобрен.\n".
+            "Разработчик проверяет на деве.\n\n".
             "Ссылка: {$pullRequest->url}";
 
         foreach ($reviewers as $reviewer) {

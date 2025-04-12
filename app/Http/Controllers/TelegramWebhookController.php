@@ -19,7 +19,9 @@ use Telegram\Bot\Keyboard\Keyboard;
 class TelegramWebhookController extends Controller
 {
     protected TelegramService $telegramService;
+
     protected TelegramAuthService $authService;
+
     protected Api $telegram;
 
     public function __construct(TelegramService $telegramService, TelegramAuthService $authService)
@@ -54,7 +56,7 @@ class TelegramWebhookController extends Controller
 
             return response()->json(['status' => 'ok']);
         } catch (Exception $e) {
-            Log::error('Telegram webhook error: ' . $e->getMessage(), [
+            Log::error('Telegram webhook error: '.$e->getMessage(), [
                 'exception' => $e,
                 'request' => $request->all(),
             ]);
@@ -181,9 +183,9 @@ class TelegramWebhookController extends Controller
 
                         $this->telegram->sendMessage([
                             'chat_id' => $returnedByReviewer->telegram_id,
-                            'text' => "⚠️ {$pullRequest->author->name} оспорил ваш возврат Pull Request:\n\n" .
-                                ($text ? "Комментарий:\n{$text}\n\n" : '') .
-                                "Ссылка: {$pullRequest->url}\n\n" .
+                            'text' => "⚠️ {$pullRequest->author->name} оспорил ваш возврат Pull Request:\n\n".
+                                ($text ? "Комментарий:\n{$text}\n\n" : '').
+                                "Ссылка: {$pullRequest->url}\n\n".
                                 'Пожалуйста, проверьте его снова.',
                             'reply_markup' => $keyboard,
                         ]);
@@ -414,8 +416,8 @@ class TelegramWebhookController extends Controller
                         $this->telegram->editMessageText([
                             'chat_id' => $chatId,
                             'message_id' => $messageId,
-                            'text' => "✅ Вы успешно апрувили Pull Request. Необходимо ещё {$remainingApprovals} " .
-                                ($remainingApprovals === 1 ? 'апрув' : 'апрува') .
+                            'text' => "✅ Вы успешно апрувили Pull Request. Необходимо ещё {$remainingApprovals} ".
+                                ($remainingApprovals === 1 ? 'апрув' : 'апрува').
                                 '.',
                         ]);
                     }
@@ -568,7 +570,7 @@ class TelegramWebhookController extends Controller
 
             return response()->json(['status' => 'error', 'message' => 'Unknown callback data']);
         } catch (Exception $e) {
-            Log::error('Error handling callback: ' . $e->getMessage(), [
+            Log::error('Error handling callback: '.$e->getMessage(), [
                 'exception' => $e,
                 'callback' => $callback,
             ]);
@@ -580,7 +582,7 @@ class TelegramWebhookController extends Controller
                     'text' => '❌ Произошла ошибка при обработке запроса. Пожалуйста, попробуйте позже.',
                 ]);
             } catch (Exception $e) {
-                Log::error('Error sending error message: ' . $e->getMessage());
+                Log::error('Error sending error message: '.$e->getMessage());
             }
 
             return response()->json(['error' => $e->getMessage()], 500);

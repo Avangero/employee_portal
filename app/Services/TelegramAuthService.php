@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Hash;
 class TelegramAuthService
 {
     const STATE_WAITING_EMAIL = 'waiting_email';
+
     const STATE_WAITING_PASSWORD = 'waiting_password';
+
     const CACHE_TTL = 3600; // 1 час
 
     public function startAuth(int $chatId): void
@@ -78,8 +80,8 @@ class TelegramAuthService
 
         return [
             'success' => true,
-            'message' => "✅ Авторизация успешна! Добро пожаловать, {$user->first_name}!\n\n" .
-                'Теперь вы можете отправлять мне ссылки на Pull Request-ы, ' .
+            'message' => "✅ Авторизация успешна! Добро пожаловать, {$user->first_name}!\n\n".
+                'Теперь вы можете отправлять мне ссылки на Pull Request-ы, '.
                 'и я буду уведомлять ревьюверов вашей команды.',
         ];
     }

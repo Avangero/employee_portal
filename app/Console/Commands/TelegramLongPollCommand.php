@@ -12,10 +12,13 @@ use Telegram\Bot\Objects\Update;
 class TelegramLongPollCommand extends Command
 {
     protected $signature = 'telegram:long-poll';
+
     protected $description = 'Start long polling for Telegram updates';
 
     protected TelegramWebhookController $controller;
+
     protected Api $telegram;
+
     protected int $offset = -1;
 
     public function __construct(TelegramWebhookController $controller)
