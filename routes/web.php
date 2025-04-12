@@ -18,6 +18,12 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('home', function () {
+    return redirect()->route('dashboard');
+})
+    ->middleware(['auth', 'verified'])
+    ->name('home');
+
 Route::get('dashboard', function () {
     return view('dashboard');
 })
