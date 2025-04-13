@@ -1,37 +1,11 @@
 <?php
 
-/**
- * Dashboard Controller
- *
- * Handles the main dashboard functionality of the application.
- *
- * PHP version 8.2
- *
- * @category Controllers
- *
- * @author   Employee Portal Team <team@employee-portal.com>
- * @license  MIT License
- *
- * @link     https://github.com/your-repo/employee-portal
- */
-
 namespace App\Http\Controllers;
 
 use App\Models\PullRequest;
-use Carbon\Carbon;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 
-/**
- * Class DashboardController
- *
- * Controls the dashboard view and related functionality.
- *
- * @category Controllers
- *
- * @author   Employee Portal Team <team@employee-portal.com>
- * @license  MIT License
- *
- * @link     https://github.com/your-repo/employee-portal
- */
 class DashboardController extends Controller
 {
     /**
@@ -39,26 +13,54 @@ class DashboardController extends Controller
      *
      * Shows weekly statistics for pull requests.
      *
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Foundation\Application
      */
     public function index()
     {
-        $weekStart = Carbon::now()->startOfWeek();
-        $weekEnd = Carbon::now()->endOfWeek();
+        $user = Auth::user();
+        $query = PullRequest::query();
+        $statsScope = 'Ваши';
 
-        $weeklyQuery = PullRequest::where('author_id', auth()->id())
-            ->whereBetween('created_at', [$weekStart, $weekEnd]);
+        // Определяем scope запроса в зависимости от роли
+        if ($user->isAdministrator()) {
+            $statsScope = 'Компания';
+            // Для админа показываем все PR
+        } elseif ($user->role?->slug === 'manager' && $user->team) {
+            $statsScope = 'Команда';
+            // Для менеджера показываем PR его команды
+            $query->whereHas('author', function ($q) use ($user) {
+                $q->where('team_id', $user->team->id);
+            });
+        } else {
+            // Для обычного пользователя показываем только его PR
+            $query->where('author_id', $user->id);
+        }
 
-        $weeklyPRs = $weeklyQuery->get();
-
+        // Получаем статистику за неделю
+        $startDate = Carbon::now()->subWeek();
         $weeklyStats = [
-            'total' => $weeklyPRs->count(),
-            'approved' => $weeklyPRs->where('status', 'approved')->count(),
-            'avg_returns' => $weeklyPRs->count() > 0
-                ? round($weeklyPRs->sum('returns_count') / $weeklyPRs->count(), 1)
-                : 0,
+            'total' => $query->where('created_at', '>=', $startDate)->count(),
+            'approved' => $query->clone()->where('created_at', '>=', $startDate)
+                ->where('status', 'approved')->count(),
+            'avg_returns' => round($query->clone()->where('created_at', '>=', $startDate)
+                ->avg('returns_count') ?? 0, 1),
         ];
 
-        return view('dashboard', compact('weeklyStats'));
+        // Получаем данные для графика за последние 7 дней
+        $chartData = [
+            'labels' => [],
+            'prCounts' => [],
+        ];
+
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->subDays($i);
+            $chartData['labels'][] = $date->format('d.m');
+
+            $chartData['prCounts'][] = $query->clone()
+                ->whereDate('created_at', $date)
+                ->count();
+        }
+
+        return view('dashboard', compact('weeklyStats', 'chartData', 'statsScope'));
     }
 }

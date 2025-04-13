@@ -11,7 +11,7 @@
                 <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                     Привет, {{ Auth::user()->first_name }}! 👋
                 </h1>
-                <p class="mt-2 text-gray-600">Добро пожаловать в панель статистики Employee Portal.</p>
+                <p class="mt-2 text-gray-600">Добро пожаловать в панель статистики Pulse</p>
             </div>
 
             <!-- Информация о команде -->
@@ -43,9 +43,9 @@
 
         <!-- Виджет статистики пулл-реквестов -->
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="border-b px-8 py-4 bg-gradient-to-r from-gray-50 to-white">
+            <div class="border-b px-8 py-4">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-lg font-semibold text-gray-900">Статистика пулл-реквестов</h2>
+                    <h2 class="text-lg font-semibold text-gray-900">Статистика пулл-реквестов ({{$statsScope}})</h2>
                     <span class="text-sm text-gray-500">За последнюю неделю</span>
                 </div>
             </div>

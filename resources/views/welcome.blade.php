@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Employee Portal') }}</title>
+        <title>{{ config('app.name', 'Pulse') }}</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -26,9 +26,9 @@
 
             <div class="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
                 <div class="mx-auto max-w-2xl text-center">
-                    <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">Портал сотрудников</h1>
+                    <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">GoCPA.Pulse — место, где команда живёт и развивается</h1>
                     <p class="mt-6 text-lg leading-8 text-gray-600">
-                        Добро пожаловать в корпоративный портал. Здесь вы найдете всю необходимую информацию и инструменты для эффективной работы.
+                        Метрики, документы, развитие, коммуникация — всё в одном пространстве. Работайте умнее. Растите быстрее.
                     </p>
                     <div class="mt-10 flex items-center justify-center gap-x-6">
                     @auth
@@ -52,7 +52,7 @@
                     <h2 class="text-base font-semibold leading-7 text-indigo-600">Все необходимое в одном месте</h2>
                     <p class="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Возможности портала</p>
                     <p class="mt-6 text-lg leading-8 text-gray-600">
-                        Наш портал предоставляет все необходимые инструменты для эффективной работы и коммуникации.
+                        GoCPA.Pulse объединяет инструменты, документы и аналитику, чтобы ваша команда работала слаженно, безопасно и продуктивно.
                     </p>
                 </div>
 

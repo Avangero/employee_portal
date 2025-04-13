@@ -11,14 +11,29 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        <!-- Styles -->
+        <style>
+            :root {
+                --gradient-primary: linear-gradient(to right, theme('colors.indigo.600'), theme('colors.purple.600'));
+                --gradient-hover: linear-gradient(to right, theme('colors.indigo.700'), theme('colors.purple.700'));
+            }
+        </style>
+
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <div class="flex">
-                <!-- Sidebar -->
-                <div class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-10">
+        <div class="min-h-screen bg-gray-50">
+            <!-- Sidebar -->
+            <div x-data="{ 
+                isOpen: localStorage.getItem('sidebarOpen') === null ? true : localStorage.getItem('sidebarOpen') === 'true',
+                toggleSidebar() {
+                    this.isOpen = !this.isOpen;
+                    localStorage.setItem('sidebarOpen', this.isOpen);
+                }
+            }" class="relative">
+                <div x-show="isOpen" 
+                     class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-10">
                     <div class="flex items-center justify-center h-16">
                         <a href="/" class="flex items-center space-x-2 group">
                             <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300">
@@ -26,7 +41,7 @@
                                     <path fill-rule="evenodd" d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" clip-rule="evenodd" />
                                 </svg>
                             </div>
-                            <span class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Employee Portal</span>
+                            <span class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Pulse</span>
                         </a>
                     </div>
 
@@ -52,8 +67,10 @@
                     <div class="absolute bottom-0 w-64">
                         <div class="flex items-center px-6 py-4">
                             <div class="flex-shrink-0">
-                                <div class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold">
-                                    {{ substr(Auth::user()->first_name, 0, 1) }}
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                                    </svg>
                                 </div>
                             </div>
                             <div class="ml-3">
@@ -68,29 +85,40 @@
                 </div>
 
                 <!-- Main Content -->
-                <div class="flex-1 ml-64">
-                    <!-- Page Header -->
+                <div x-bind:class="{ 'ml-64': isOpen, 'ml-0': !isOpen }">
                     @if (isset($header))
                         <header class="bg-white/40 backdrop-blur-sm border-b border-gray-100">
-                            <div class="max-w-7xl mx-auto px-8 h-20 flex items-center">
+                            <div class="max-w-7xl mx-auto px-8 h-16 flex items-center">
                                 <div class="flex items-center justify-between w-full">
-                                    <div class="flex items-center space-x-2 text-lg">
-                                        <a href="{{ route('dashboard') }}" class="text-gray-400 hover:text-indigo-600 transition-colors duration-200">app</a>
-                                        <span class="text-gray-300">/</span>
-                                        <span class="text-gray-600 font-medium">{{ $header }}</span>
+                                    <div class="flex items-center space-x-3 text-sm">
+                                        <button @click="toggleSidebar()" class="p-1.5 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+                                            <svg x-bind:class="{ 'rotate-180': !isOpen }" class="w-5 h-5 text-gray-500 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+                                        <div class="flex items-center space-x-2 text-lg">
+                                            <a href="{{ route('dashboard') }}" class="text-gray-400 hover:text-indigo-600 transition-colors duration-200">app</a>
+                                            <span class="text-gray-300">/</span>
+                                            <span class="text-gray-600 font-medium">{{ $header }}</span>
+                                        </div>
                                     </div>
-                                    {{ $headerActions ?? '' }}
+                                    <div>
+                                        {{ $headerActions ?? '' }}
+                                    </div>
                                 </div>
                             </div>
                         </header>
                     @endif
 
                     <!-- Page Content -->
-                    <main class="p-8">
-                        {{ $slot }}
+                    <main class="py-8">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+                            {{ $slot }}
+                        </div>
                     </main>
                 </div>
             </div>
         </div>
+        @stack('scripts')
     </body>
 </html>

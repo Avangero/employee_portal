@@ -13,7 +13,7 @@ class TelegramLongPollCommand extends Command
 {
     protected $signature = 'telegram:long-poll';
 
-    protected $description = 'Start long polling for Telegram updates';
+    protected $description = 'Запускает log-polling для получения сообщений из Телегама.';
 
     protected TelegramWebhookController $controller;
 
@@ -30,7 +30,7 @@ class TelegramLongPollCommand extends Command
 
     public function handle()
     {
-        $this->info('Starting Telegram long polling...');
+        $this->info('Запуск Телеграм long polling...');
 
         while (true) {
             try {
@@ -46,12 +46,12 @@ class TelegramLongPollCommand extends Command
                 foreach ($updates as $update) {
                     $updateId = $update->get('update_id');
                     if (! $updateId) {
-                        $this->error('Update ID is missing');
+                        $this->error('Отсуствует ID сообщения');
 
                         continue;
                     }
 
-                    $this->info("Processing update {$updateId}");
+                    $this->info("Обрабатываю сообщение({$updateId})");
 
                     try {
                         // Создаем новый Request с данными update
@@ -71,15 +71,15 @@ class TelegramLongPollCommand extends Command
 
                         // Обновляем offset только после успешной обработки
                         $this->offset = $updateId;
-                        $this->info("Successfully processed update {$updateId}");
+                        $this->info("Успешно обработал сообщение({$updateId})");
                     } catch (Exception $e) {
-                        $this->error("Failed to process update {$updateId}: {$e->getMessage()}");
+                        $this->error("Сообщение обработанно с ошибкой){$updateId}): {$e->getMessage()}");
                         // Даже если обработка не удалась, обновляем offset чтобы не застрять
                         $this->offset = $updateId;
                     }
                 }
             } catch (Exception $e) {
-                $this->error("Error in polling loop: {$e->getMessage()}");
+                $this->error("Ошибка в цикле пуллинга: {$e->getMessage()}");
                 sleep(1);
             }
         }
