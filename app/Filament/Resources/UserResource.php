@@ -108,7 +108,8 @@ class UserResource extends Resource
                     ->searchable()
                     ->preload(),
                 Select::make('manager_id')
-                    ->relationship('manager', 'first_name')
+                    ->relationship('manager', 'first_name', fn ($query) => $query)
+                    ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->first_name} {$record->last_name}")
                     ->label('Руководитель')
                     ->searchable()
                     ->preload(),
