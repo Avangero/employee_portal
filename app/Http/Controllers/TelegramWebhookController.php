@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Telegram\Bot\Api;
+use Telegram\Bot\BotsManager;
 use Telegram\Bot\Keyboard\Keyboard;
 
 class TelegramWebhookController extends Controller
@@ -28,10 +29,12 @@ class TelegramWebhookController extends Controller
     {
         $this->telegramService = $telegramService;
         $this->authService = $authService;
-        $this->telegram = new Api(config('telegram.bot_token'));
+        $this->telegram = app(BotsManager::class)->bot();
 
-        // Регистрируем команды
-        $this->telegram->addCommand(StartCommand::class);
+        // Регистрируем только StartCommand
+        $this->telegram->addCommands([
+            StartCommand::class,
+        ]);
     }
 
     public function handle(Request $request)
@@ -74,6 +77,36 @@ class TelegramWebhookController extends Controller
             return response()->json(['status' => 'error', 'message' => 'No text in message']);
         }
 
+        // Проверяем, является ли сообщение командой /start
+        if ($text === '/start') {
+            $chatId = $message['chat']['id'];
+
+            // Проверяем, авторизован ли пользователь
+            if ($this->authService->isAuthenticated($chatId)) {
+                $user = $this->getUser($chatId);
+                $this->telegram->sendMessage([
+                    'chat_id' => $chatId,
+                    'text' => __('telegram.user.auth_success'),
+                ]);
+
+                return response()->json(['status' => 'ok']);
+            }
+
+            $this->telegram->sendMessage([
+                'chat_id' => $chatId,
+                'text' => '👋 Добро пожаловать в бот для ревью Pull Request\'ов!',
+            ]);
+
+            $this->telegram->sendMessage([
+                'chat_id' => $chatId,
+                'text' => 'Для начала работы, пожалуйста, авторизуйтесь, отправив ваш email.',
+            ]);
+
+            $this->authService->setState($chatId, TelegramAuthService::STATE_WAITING_EMAIL);
+
+            return response()->json(['status' => 'ok']);
+        }
+
         $user = $this->getUser($chatId);
 
         $pendingReview = cache()->get("pending_review_{$chatId}");
@@ -81,13 +114,9 @@ class TelegramWebhookController extends Controller
             try {
                 $pullRequest = PullRequest::findOrFail($pendingReview);
 
-                // Проверяем только на полное одобрение
                 if ($pullRequest->approvals_count >= $pullRequest->required_approvals) {
                     cache()->forget("pending_review_{$chatId}");
-                    $this->telegram->sendMessage([
-                        'chat_id' => $chatId,
-                        'text' => '❌ Этот Pull Request уже получил все необходимые апрувы.',
-                    ]);
+                    $this->sendMessage($chatId, __('telegram.reviewer.pr_already_approved'));
 
                     return response()->json(['status' => 'error', 'message' => 'PR has all required approvals']);
                 }
@@ -104,20 +133,14 @@ class TelegramWebhookController extends Controller
 
                 cache()->forget("pending_review_{$chatId}");
 
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => '✅ Ваш комментарий был сохранен. Pull Request возвращен на доработку.',
-                ]);
+                $this->sendMessage($chatId, __('telegram.reviewer.review_success'));
 
                 $this->telegramService->notifyAuthorAboutReview($pullRequest, $user->name, 'returned', $text);
 
                 return response()->json(['status' => 'success']);
             } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
                 cache()->forget("pending_review_{$chatId}");
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => '❌ Извините, но этот Pull Request больше не существует или был удален.',
-                ]);
+                $this->sendMessage($chatId, __('telegram.common.error'));
 
                 return response()->json(['error' => 'PR not found'], 404);
             }
@@ -131,10 +154,7 @@ class TelegramWebhookController extends Controller
 
         // Проверяем аутентификацию для остальных действий
         if (! $this->authService->isAuthenticated($chatId)) {
-            $this->telegram->sendMessage([
-                'chat_id' => $chatId,
-                'text' => '❌ Вы не авторизованы. Используйте команду /start для авторизации.',
-            ]);
+            $this->sendMessage($chatId, __('telegram.user.not_authenticated'));
 
             return response()->json(['status' => 'error', 'message' => 'Not authenticated']);
         }
@@ -146,10 +166,7 @@ class TelegramWebhookController extends Controller
                 $pullRequest = PullRequest::findOrFail($pendingDispute);
 
                 if (! $pullRequest->canBeReviewed()) {
-                    $this->telegram->sendMessage([
-                        'chat_id' => $chatId,
-                        'text' => '❌ Этот Pull Request уже полностью одобрен и не может быть изменен.',
-                    ]);
+                    $this->sendMessage($chatId, '❌ Этот Pull Request уже полностью одобрен и не может быть изменен.');
                     cache()->forget("pending_dispute_{$chatId}");
 
                     return response()->json(['status' => 'error', 'message' => 'PR is already approved']);
@@ -172,7 +189,7 @@ class TelegramWebhookController extends Controller
                             ->inline()
                             ->row([
                                 Keyboard::inlineButton([
-                                    'text' => '✅ Апрувить',
+                                    'text' => '✅ Апрув',
                                     'callback_data' => "approve_{$pullRequest->id}",
                                 ]),
                                 Keyboard::inlineButton([
@@ -181,21 +198,14 @@ class TelegramWebhookController extends Controller
                                 ]),
                             ]);
 
-                        $this->telegram->sendMessage([
-                            'chat_id' => $returnedByReviewer->telegram_id,
-                            'text' => "⚠️ {$pullRequest->author->name} оспорил ваш возврат Pull Request:\n\n".
-                                ($text ? "Комментарий:\n{$text}\n\n" : '').
-                                "Ссылка: {$pullRequest->url}\n\n".
-                                'Пожалуйста, проверьте его снова.',
-                            'reply_markup' => $keyboard,
-                        ]);
+                        $this->sendMessage($returnedByReviewer->telegram_id, "⚠️ {$pullRequest->author->name} оспорил ваш возврат Pull Request:\n\n".
+                            ($text ? "Комментарий:\n{$text}\n\n" : '').
+                            "Ссылка: {$pullRequest->url}\n\n".
+                            'Пожалуйста, проверьте его снова.', $keyboard);
                     }
 
                     // Отправляем уведомление автору
-                    $this->telegram->sendMessage([
-                        'chat_id' => $chatId,
-                        'text' => '✅ Ваше оспаривание принято. Ревьювер получит уведомление о необходимости повторной проверки.',
-                    ]);
+                    $this->sendMessage($chatId, '✅ Ваше оспаривание принято. Ревьювер получит уведомление о необходимости повторной проверки.');
 
                     cache()->forget("pending_dispute_{$chatId}");
 
@@ -205,20 +215,14 @@ class TelegramWebhookController extends Controller
                 $pullRequest->dispute();
                 $this->telegramService->notifyReviewersAboutUpdate($pullRequest, 'disputed', $text);
 
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => '✅ Ваше объяснение отправлено ревьюверам.',
-                ]);
+                $this->sendMessage($chatId, '✅ Ваше объяснение отправлено.');
 
                 cache()->forget("pending_dispute_{$chatId}");
 
                 return response()->json(['status' => 'ok']);
             } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
                 cache()->forget("pending_dispute_{$chatId}");
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => '❌ Извините, но этот Pull Request больше не существует или был удален.',
-                ]);
+                $this->sendMessage($chatId, '❌ Извините, но этот Pull Request больше не существует или был удален.');
 
                 return response()->json(['error' => 'PR not found'], 404);
             }
@@ -230,10 +234,7 @@ class TelegramWebhookController extends Controller
 
             if (! $user->team_id) {
                 Log::warning('User has no team:', ['user_id' => $user->id]);
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => '❌ Вы не состоите в команде. Пожалуйста, обратитесь к администратору.',
-                ]);
+                $this->sendMessage($chatId, '❌ Вы не состоите в команде. Пожалуйста, обратитесь к администратору.');
 
                 return response()->json(['error' => 'User has no team']);
             }
@@ -246,10 +247,7 @@ class TelegramWebhookController extends Controller
 
             if ($existingPR) {
                 Log::info('Duplicate Pull Request detected:', ['existing_pr_id' => $existingPR->id]);
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => '⚠️ Такой Pull Request уже был создан ранее.',
-                ]);
+                $this->sendMessage($chatId, '⚠️ Такой Pull Request уже был создан ранее.');
 
                 return response()->json(['status' => 'error', 'message' => 'Duplicate PR']);
             }
@@ -271,10 +269,7 @@ class TelegramWebhookController extends Controller
 
                 if ($pullRequest->required_approvals === 0) {
                     DB::rollBack();
-                    $this->telegram->sendMessage([
-                        'chat_id' => $chatId,
-                        'text' => '❌ В вашей команде нет активных ревьюверов. Пожалуйста, обратитесь к администратору.',
-                    ]);
+                    $this->sendMessage($chatId, __('telegram.user.no_reviewers'));
 
                     return response()->json(['status' => 'error', 'message' => 'No reviewers available']);
                 }
@@ -286,10 +281,7 @@ class TelegramWebhookController extends Controller
                     'required_approvals' => $pullRequest->required_approvals,
                 ]);
 
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => '✅ Pull Request успешно создан! Уведомляю ревьюверов...',
-                ]);
+                $this->sendMessage($chatId, __('telegram.user.pr_created'));
 
                 $this->telegramService->sendPullRequestToReviewers($pullRequest);
 
@@ -302,10 +294,7 @@ class TelegramWebhookController extends Controller
                     'user_id' => $user->id,
                 ]);
 
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => '❌ Произошла ошибка при создании Pull Request. Пожалуйста, попробуйте позже.',
-                ]);
+                $this->sendMessage($chatId, __('telegram.common.error'));
 
                 return response()->json(['error' => $e->getMessage()], 500);
             }
@@ -323,10 +312,7 @@ class TelegramWebhookController extends Controller
             default => ['success' => false, 'message' => 'Неизвестное состояние авторизации'],
         };
 
-        $this->telegram->sendMessage([
-            'chat_id' => $chatId,
-            'text' => $result['message'],
-        ]);
+        $this->sendMessage($chatId, $result['message']);
 
         return response()->json(['status' => $result['success'] ? 'ok' : 'error']);
     }
@@ -342,7 +328,7 @@ class TelegramWebhookController extends Controller
                 $this->telegram->editMessageText([
                     'chat_id' => $chatId,
                     'message_id' => $messageId,
-                    'text' => '❌ Вы не авторизованы. Используйте команду /start для авторизации.',
+                    'text' => __('telegram.user.not_authenticated'),
                 ]);
 
                 return response()->json(['status' => 'error', 'message' => 'Not authenticated']);
@@ -355,7 +341,7 @@ class TelegramWebhookController extends Controller
                 $this->telegram->editMessageText([
                     'chat_id' => $chatId,
                     'message_id' => $messageId,
-                    'text' => '❌ У вас нет прав на проверку Pull Request. Обратитесь к администратору.',
+                    'text' => __('telegram.reviewer.not_reviewer'),
                 ]);
 
                 return response()->json(['status' => 'error', 'message' => 'Not a reviewer']);
@@ -366,34 +352,26 @@ class TelegramWebhookController extends Controller
                 try {
                     $pullRequest = PullRequest::findOrFail($pullRequestId);
 
-                    // Проверяем только на полное одобрение
                     if ($pullRequest->approvals_count >= $pullRequest->required_approvals) {
                         $this->telegram->editMessageText([
                             'chat_id' => $chatId,
                             'message_id' => $messageId,
-                            'text' => '❌ Этот Pull Request уже получил все необходимые апрувы.',
+                            'text' => __('telegram.reviewer.pr_already_approved'),
                         ]);
 
                         return response()->json(['status' => 'error', 'message' => 'PR has all required approvals']);
                     }
 
-                    // Проверяем, не апрувил ли уже этот ревьювер
-                    if (
-                        $pullRequest->reviews()->where('reviewer_id', $user->id)->where('status', 'approved')->exists()
-                    ) {
+                    if ($pullRequest->reviews()->where('reviewer_id', $user->id)->where('status', 'approved')->exists()) {
                         $this->telegram->editMessageText([
                             'chat_id' => $chatId,
                             'message_id' => $messageId,
-                            'text' => '❌ Вы уже апрувили этот Pull Request.',
+                            'text' => __('telegram.reviewer.already_approved'),
                         ]);
 
-                        return response()->json([
-                            'status' => 'error',
-                            'message' => 'Already approved by this reviewer',
-                        ]);
+                        return response()->json(['status' => 'error', 'message' => 'Already approved by this reviewer']);
                     }
 
-                    // Создаем новый апрув
                     PullRequestReview::create([
                         'pull_request_id' => $pullRequest->id,
                         'reviewer_id' => $user->id,
@@ -403,22 +381,22 @@ class TelegramWebhookController extends Controller
                     $pullRequest->updateStatus();
                     $pullRequest->updateRequiredApprovals();
 
-                    // Проверяем, получил ли PR все необходимые апрувы
                     $pullRequest->refresh();
                     if ($pullRequest->approvals_count >= $pullRequest->required_approvals) {
                         $this->telegram->editMessageText([
                             'chat_id' => $chatId,
                             'message_id' => $messageId,
-                            'text' => '✅ Поздравляем! Ваш апрув стал последним необходимым, и Pull Request полностью одобрен.',
+                            'text' => __('telegram.reviewer.final_approval'),
                         ]);
                     } else {
                         $remainingApprovals = $pullRequest->required_approvals - $pullRequest->approvals_count;
                         $this->telegram->editMessageText([
                             'chat_id' => $chatId,
                             'message_id' => $messageId,
-                            'text' => "✅ Вы успешно апрувили Pull Request. Необходимо ещё {$remainingApprovals} ".
-                                ($remainingApprovals === 1 ? 'апрув' : 'апрува').
-                                '.',
+                            'text' => __('telegram.reviewer.approval_success', [
+                                'count' => $remainingApprovals,
+                                'word' => $this->getApprovalWord($remainingApprovals),
+                            ]),
                         ]);
                     }
 
@@ -429,7 +407,7 @@ class TelegramWebhookController extends Controller
                     $this->telegram->editMessageText([
                         'chat_id' => $chatId,
                         'message_id' => $messageId,
-                        'text' => '❌ Извините, но этот Pull Request больше не существует или был удален.',
+                        'text' => __('telegram.common.pr_not_found'),
                     ]);
 
                     return response()->json(['error' => 'PR not found'], 404);
@@ -441,12 +419,11 @@ class TelegramWebhookController extends Controller
                 try {
                     $pullRequest = PullRequest::findOrFail($pullRequestId);
 
-                    // Проверяем только на полное одобрение
                     if ($pullRequest->approvals_count >= $pullRequest->required_approvals) {
                         $this->telegram->editMessageText([
                             'chat_id' => $chatId,
                             'message_id' => $messageId,
-                            'text' => '❌ Этот Pull Request уже получил все необходимые апрувы.',
+                            'text' => __('telegram.reviewer.pr_already_approved'),
                         ]);
 
                         return response()->json(['status' => 'error', 'message' => 'PR has all required approvals']);
@@ -457,7 +434,7 @@ class TelegramWebhookController extends Controller
                     $this->telegram->editMessageText([
                         'chat_id' => $chatId,
                         'message_id' => $messageId,
-                        'text' => '📝 Пожалуйста, напишите комментарий к возврату Pull Request.',
+                        'text' => __('telegram.reviewer.request_comment'),
                     ]);
 
                     return response()->json(['status' => 'success']);
@@ -465,7 +442,7 @@ class TelegramWebhookController extends Controller
                     $this->telegram->editMessageText([
                         'chat_id' => $chatId,
                         'message_id' => $messageId,
-                        'text' => '❌ Извините, но этот Pull Request больше не существует или был удален.',
+                        'text' => __('telegram.common.pr_not_found'),
                     ]);
 
                     return response()->json(['error' => 'PR not found'], 404);
@@ -579,7 +556,7 @@ class TelegramWebhookController extends Controller
                 $this->telegram->editMessageText([
                     'chat_id' => $chatId,
                     'message_id' => $messageId,
-                    'text' => '❌ Произошла ошибка при обработке запроса. Пожалуйста, попробуйте позже.',
+                    'text' => __('telegram.common.error'),
                 ]);
             } catch (Exception $e) {
                 Log::error('Error sending error message: '.$e->getMessage());
@@ -592,5 +569,31 @@ class TelegramWebhookController extends Controller
     protected function getUser(int $chatId): ?User
     {
         return User::where('telegram_id', (string) $chatId)->first();
+    }
+
+    protected function getApprovalWord(int $count): string
+    {
+        return match ($count) {
+            1 => 'апрув',
+            2, 3, 4 => 'апрува',
+            default => 'апрувов'
+        };
+    }
+
+    private function sendMessage(int $chatId, string $text, array $buttons = []): void
+    {
+        $params = [
+            'chat_id' => $chatId,
+            'text' => $text,
+            'parse_mode' => 'HTML',
+        ];
+
+        if (! empty($buttons)) {
+            $params['reply_markup'] = json_encode([
+                'inline_keyboard' => $buttons,
+            ]);
+        }
+
+        $this->telegramService->sendMessage($params);
     }
 }

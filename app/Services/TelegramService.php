@@ -6,30 +6,33 @@ use App\Models\PullRequest;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\Log;
-use Telegram\Bot\Api;
 use Telegram\Bot\Keyboard\Keyboard;
+use Telegram\Bot\Laravel\Facades\Telegram;
 
 class TelegramService
 {
-    protected Api $telegram;
-
-    public function __construct()
+    public function sendMessage(array $params): void
     {
-        $this->telegram = new Api(config('telegram.bot_token'));
+        try {
+            Telegram::sendMessage($params);
+        } catch (Exception $e) {
+            Log::error('Error sending Telegram message:', [
+                'error' => $e->getMessage(),
+                'params' => $params,
+            ]);
+            throw $e;
+        }
     }
 
     public function sendPullRequestToReviewers(PullRequest $pullRequest): void
     {
-        Log::info('Начинаем отправку PR ревьюверам', [
-            'pull_request_id' => $pullRequest->id,
-            'team_id' => $pullRequest->team_id,
-            'author_id' => $pullRequest->author_id,
-        ]);
+        $reviewers = User::where('team_id', $pullRequest->team_id)
+            ->where('is_reviewer', true)
+            ->where('id', '!=', $pullRequest->author_id)
+            ->get();
 
-        $pullRequest->updateRequiredApprovals();
-
-        if ($pullRequest->required_approvals === 0) {
-            Log::warning('В команде нет активных ревьюверов', [
+        if ($reviewers->isEmpty()) {
+            Log::warning('No reviewers found for team', [
                 'team_id' => $pullRequest->team_id,
                 'pull_request_id' => $pullRequest->id,
             ]);
@@ -37,33 +40,11 @@ class TelegramService
             return;
         }
 
-        $pullRequest->markAsInReview();
-
-        $reviewers = User::where('team_id', $pullRequest->team_id)
-            ->where('is_reviewer', true)
-            ->where('id', '!=', $pullRequest->author_id)
-            ->get();
-
-        Log::info('Найдены ревьюверы', [
-            'count' => $reviewers->count(),
-            'reviewers' => $reviewers
-                ->map(
-                    fn ($r) => [
-                        'id' => $r->id,
-                        'name' => $r->name,
-                        'telegram_id' => $r->telegram_id,
-                        'is_reviewer' => $r->is_reviewer,
-                        'team_id' => $r->team_id,
-                    ],
-                )
-                ->toArray(),
-        ]);
-
         $keyboard = Keyboard::make()
             ->inline()
             ->row([
                 Keyboard::inlineButton([
-                    'text' => '✅ Апрувить',
+                    'text' => '✅ Апрув',
                     'callback_data' => "approve_{$pullRequest->id}",
                 ]),
                 Keyboard::inlineButton([
@@ -75,29 +56,28 @@ class TelegramService
         foreach ($reviewers as $reviewer) {
             if ($reviewer->telegram_id) {
                 try {
-                    Log::info('Отправляем уведомление ревьюверу', [
+                    Log::info('Sending notification to reviewer', [
                         'reviewer_id' => $reviewer->id,
                         'telegram_id' => $reviewer->telegram_id,
                     ]);
 
-                    $this->telegram->sendMessage([
+                    Telegram::sendMessage([
                         'chat_id' => $reviewer->telegram_id,
-                        'text' => "🔍 Новый Pull Request на ревью\n\nАвтор: {$pullRequest->author->name}\nСсылка: {$pullRequest->url}",
+                        'text' => __('telegram.reviewer.new_pr_notification', [
+                            'author' => $pullRequest->author->name,
+                            'url' => $pullRequest->url,
+                        ]),
                         'reply_markup' => $keyboard,
                     ]);
 
-                    Log::info('Уведомление успешно отправлено');
+                    Log::info('Notification sent successfully');
                 } catch (Exception $e) {
-                    Log::error('Ошибка при отправке уведомления ревьюверу', [
+                    Log::error('Error sending notification to reviewer', [
                         'reviewer_id' => $reviewer->id,
                         'telegram_id' => $reviewer->telegram_id,
                         'error' => $e->getMessage(),
                     ]);
                 }
-            } else {
-                Log::warning('У ревьювера нет telegram_id', [
-                    'reviewer_id' => $reviewer->id,
-                ]);
             }
         }
     }
@@ -113,44 +93,47 @@ class TelegramService
         }
 
         $message = match ($status) {
-            'approved' => "✅ Ваш Pull Request принял {$reviewerName}.\n\nСсылка: {$pullRequest->url}",
-            'changes_requested' => "🔁 {$reviewerName} запросил изменения".
-                ($comment ? ":\n\n{$comment}" : '').
-                "\n\nСсылка: {$pullRequest->url}",
-            'returned' => "🔄 {$reviewerName} вернул Pull Request на доработку".
-                ($comment ? ":\n\n{$comment}" : '').
-                "\n\nСсылка: {$pullRequest->url}",
+            'approved' => __('telegram.reviewer.pr_approved_notification', [
+                'url' => $pullRequest->url,
+                'reviewer' => $reviewerName,
+            ]),
+            'changes_requested', 'returned' => __('telegram.reviewer.pr_changes_requested_notification', [
+                'reviewer' => $reviewerName,
+                'url' => $pullRequest->url,
+                'comment' => $comment ? "\n\n{$comment}" : '',
+            ]),
         };
-
-        $keyboard = null;
 
         if ($status === 'approved') {
             if ($pullRequest->approvals_count < $pullRequest->required_approvals) {
                 if ($pullRequest->required_approvals > 1) {
-                    $message .= "\n\nОжидайте одобрения от других ревьюверов.";
+                    $message .= "\n\n".__('telegram.user.wait_second_approval');
                 }
             } else {
-                $message .= "\n\n🎉 Все необходимые ревьюверы одобрили ваш код. Можете мерджить!";
-
-                // Отправляем уведомление всем ревьюверам о том, что PR полностью одобрен
+                $message .= "\n\n".__('telegram.user.pr_approved');
                 $this->notifyAllReviewersAboutApproval($pullRequest);
             }
-        } elseif ($status === 'changes_requested' || $status === 'returned') {
+        }
+
+        $keyboard = null;
+        if ($status === 'returned') {
             $keyboard = Keyboard::make()
                 ->inline()
                 ->row([
                     Keyboard::inlineButton([
-                        'text' => '🛠 Я поправил',
-                        'callback_data' => "fixed_{$pullRequest->id}",
-                    ]),
-                    Keyboard::inlineButton([
-                        'text' => '❓ Оспорить',
+                        'text' => '❓ Оспорить возврат',
                         'callback_data' => "dispute_{$pullRequest->id}",
+                    ]),
+                ])
+                ->row([
+                    Keyboard::inlineButton([
+                        'text' => '✅ Я поправил',
+                        'callback_data' => "fixed_{$pullRequest->id}",
                     ]),
                 ]);
         }
 
-        $this->telegram->sendMessage([
+        Telegram::sendMessage([
             'chat_id' => $pullRequest->author->telegram_id,
             'text' => $message,
             'reply_markup' => $keyboard,
@@ -159,55 +142,22 @@ class TelegramService
 
     public function notifyReviewersAboutUpdate(PullRequest $pullRequest, string $type, ?string $comment = null): void
     {
-        $message = match ($type) {
-            'fixed' => "🔄 Автор внес изменения в Pull Request\nСсылка: {$pullRequest->url}",
-            'disputed' => '❗️ Автор оспорил ваши замечания'.
-                ($comment ? ":\n\n{$comment}" : '').
-                "\n\nСсылка: {$pullRequest->url}",
-            'returned' => '🔄 Pull Request возвращен на доработку'.
-                ($comment ? ":\n\n{$comment}" : '').
-                "\n\nСсылка: {$pullRequest->url}",
-            'changes_requested' => '🔄 Запрошены изменения в Pull Request'.
-                ($comment ? ":\n\n{$comment}" : '').
-                "\n\nСсылка: {$pullRequest->url}",
-        };
+        $approvedReviewerIds = $pullRequest->reviews()
+            ->where('status', 'approved')
+            ->pluck('reviewer_id')
+            ->toArray();
 
-        // Получаем ID ревьюверов с их последним статусом ревью
-        $reviewStatuses = $pullRequest
-            ->reviews()
-            ->selectRaw('reviewer_id, MAX(id) as last_review_id')
-            ->groupBy('reviewer_id')
-            ->get()
-            ->mapWithKeys(function ($review) use ($pullRequest) {
-                $lastReview = $pullRequest->reviews()->where('id', $review->last_review_id)->first();
+        $activeReviewerIds = $pullRequest->reviews()
+            ->whereIn('status', ['returned', 'changes_requested'])
+            ->pluck('reviewer_id')
+            ->toArray();
 
-                return [$review->reviewer_id => $lastReview->status];
-            });
-
-        // Получаем ID тех, чей последний статус - approved
-        $approvedReviewerIds = $reviewStatuses->filter(fn ($status) => $status === 'approved')->keys()->toArray();
-
-        // Получаем ID всех ревьюверов, которые уже оставляли комментарии
-        $activeReviewerIds = $reviewStatuses->keys()->toArray();
-
-        // Получаем только тех ревьюверов, которые:
-        // 1. Уже участвовали в ревью (оставляли комментарии)
-        // 2. Еще не апрувнули PR
-        // 3. Не являются автором PR
         $reviewers = User::where('team_id', $pullRequest->team_id)
             ->where('is_reviewer', true)
-            ->whereIn('id', $activeReviewerIds) // Только те, кто уже участвовал
-            ->whereNotIn('id', $approvedReviewerIds) // Исключаем тех, кто уже апрувнул
+            ->whereIn('id', $activeReviewerIds)
+            ->whereNotIn('id', $approvedReviewerIds)
             ->where('id', '!=', $pullRequest->author_id)
             ->get();
-
-        Log::info('Отправляем уведомления ревьюверам об обновлении PR', [
-            'pull_request_id' => $pullRequest->id,
-            'approved_reviewers' => $approvedReviewerIds,
-            'active_reviewers' => $activeReviewerIds,
-            'notified_reviewers' => $reviewers->pluck('id')->toArray(),
-            'type' => $type,
-        ]);
 
         foreach ($reviewers as $reviewer) {
             if ($reviewer->telegram_id) {
@@ -215,7 +165,7 @@ class TelegramService
                     ->inline()
                     ->row([
                         Keyboard::inlineButton([
-                            'text' => '✅ Апрувить',
+                            'text' => '✅ Апрув',
                             'callback_data' => "approve_{$pullRequest->id}",
                         ]),
                         Keyboard::inlineButton([
@@ -224,9 +174,13 @@ class TelegramService
                         ]),
                     ]);
 
-                $this->telegram->sendMessage([
+                Telegram::sendMessage([
                     'chat_id' => $reviewer->telegram_id,
-                    'text' => $message,
+                    'text' => __('telegram.reviewer.pr_updated', [
+                        'author' => $pullRequest->author->name,
+                        'url' => $pullRequest->url,
+                        'comment' => $comment ? "\n\nКомментарий:\n{$comment}" : '',
+                    ]),
                     'reply_markup' => $keyboard,
                 ]);
             }
@@ -235,7 +189,7 @@ class TelegramService
 
     public function requestReviewComment(int $chatId, int $pullRequestId): void
     {
-        $this->telegram->sendMessage([
+        Telegram::sendMessage([
             'chat_id' => $chatId,
             'text' => 'Пожалуйста, напишите комментарий к вашему решению:',
             'reply_markup' => Keyboard::make()
@@ -256,16 +210,14 @@ class TelegramService
             ->where('id', '!=', $pullRequest->author_id)
             ->get();
 
-        $message =
-            "✅ Pull Request от {$pullRequest->author->name} полностью одобрен.\n".
-            "Разработчик проверяет на деве.\n\n".
-            "Ссылка: {$pullRequest->url}";
-
         foreach ($reviewers as $reviewer) {
             if ($reviewer->telegram_id) {
-                $this->telegram->sendMessage([
+                Telegram::sendMessage([
                     'chat_id' => $reviewer->telegram_id,
-                    'text' => $message,
+                    'text' => __('telegram.reviewer.pr_fully_approved', [
+                        'author' => $pullRequest->author->name,
+                        'url' => $pullRequest->url,
+                    ]),
                 ]);
             }
         }

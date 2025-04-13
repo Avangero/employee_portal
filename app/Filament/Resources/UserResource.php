@@ -95,6 +95,7 @@ class UserResource extends Resource
                 TextInput::make('password')
                     ->password()
                     ->required(fn ($record) => ! $record)
+                    ->dehydrated(fn ($state) => filled($state))
                     ->minLength(8)
                     ->label('Пароль'),
             ]),

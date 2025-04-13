@@ -20,23 +20,35 @@ class StartCommand extends Command
 
     public function handle()
     {
-        $chatId = $this->getUpdate()->getMessage()->getChat()->getId();
+        $update = json_decode(request()->getContent(), true);
+        \Log::info('Update data:', ['update' => $update]);
 
-        if ($this->authService->isAuthenticated($chatId)) {
-            $this->replyWithMessage([
-                'text' => "👋 С возвращением!\n\n".
-                    'Отправьте мне ссылку на Pull Request, и я уведомлю всех ревьюверов в вашей команде.',
-            ]);
+        if (empty($update['message'])) {
+            \Log::error('No message in update');
 
             return;
         }
 
-        $this->replyWithMessage([
-            'text' => "👋 Добро пожаловать в бот для ревью Pull Request-ов!\n\n".
-                "Для начала работы необходимо авторизоваться.\n".
-                'Пожалуйста, введите ваш email:',
+        $message = $update['message'];
+        if (! isset($message['chat']['id'])) {
+            \Log::error('No chat id in message', ['message' => $message]);
+
+            return;
+        }
+
+        $chatId = $message['chat']['id'];
+        \Log::info('Chat ID:', ['chat_id' => $chatId]);
+
+        $this->telegram->sendMessage([
+            'chat_id' => $chatId,
+            'text' => '👋 Добро пожаловать в бот для ревью Pull Request\'ов!',
         ]);
 
-        $this->authService->startAuth($chatId);
+        $this->telegram->sendMessage([
+            'chat_id' => $chatId,
+            'text' => 'Для начала работы, пожалуйста, авторизуйтесь, отправив ваш email.',
+        ]);
+
+        $this->authService->setState($chatId, TelegramAuthService::STATE_WAITING_EMAIL);
     }
 }
