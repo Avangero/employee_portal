@@ -28,7 +28,7 @@
                 <div class="mx-auto max-w-2xl text-center">
                     <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">GoCPA.Pulse — место, где команда живёт и развивается</h1>
                     <p class="mt-6 text-lg leading-8 text-gray-600">
-                        Метрики, документы, развитие, коммуникация — всё в одном пространстве. Работайте умнее. Растите быстрее.
+                        Метрики, документы, развитие, коммуникация — всё в одном пространстве. Работайте эффективнее. Растите быстрее.
                     </p>
                     <div class="mt-10 flex items-center justify-center gap-x-6">
                     @auth

@@ -25,14 +25,14 @@
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-50">
             <!-- Sidebar -->
-            <div x-data="{ 
+            <div x-data="{
                 isOpen: localStorage.getItem('sidebarOpen') === null ? true : localStorage.getItem('sidebarOpen') === 'true',
                 toggleSidebar() {
                     this.isOpen = !this.isOpen;
                     localStorage.setItem('sidebarOpen', this.isOpen);
                 }
             }" class="relative">
-                <div x-show="isOpen" 
+                <div x-show="isOpen"
                      class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-10">
                     <div class="flex items-center justify-center h-16">
                         <a href="/" class="flex items-center space-x-2 group">
@@ -52,6 +52,13 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                                 </svg>
                                 Дашборд
+                            </a>
+
+                            <a href="{{ route('docs.index') }}" class="flex items-center px-4 py-3 {{ request()->routeIs('docs.*') ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600 border-r-4 border-indigo-600' : 'text-gray-600 hover:bg-gray-50' }} transition-all duration-200">
+                                <svg class="w-5 h-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                Документы
                             </a>
 
                             <a href="{{ route('pull-requests.index') }}" class="flex items-center px-4 py-3 {{ request()->routeIs('pull-requests.*') ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600 border-r-4 border-indigo-600' : 'text-gray-600 hover:bg-gray-50' }} transition-all duration-200">
@@ -98,8 +105,16 @@
                                         </button>
                                         <div class="flex items-center space-x-2 text-lg">
                                             <a href="{{ route('dashboard') }}" class="text-gray-400 hover:text-indigo-600 transition-colors duration-200">app</a>
-                                            <span class="text-gray-300">/</span>
-                                            <span class="text-gray-600 font-medium">{{ $header }}</span>
+                                            @php
+                                                $segments = request()->segments();
+                                                $currentUrl = '';
+                                            @endphp
+                                            
+                                            @foreach($segments as $segment)
+                                                @php $currentUrl .= '/' . $segment; @endphp
+                                                <span class="text-gray-300">/</span>
+                                                <a href="{{ $currentUrl }}" class="text-gray-600 font-medium hover:text-indigo-600 transition-colors duration-200">{{ $segment }}</a>
+                                            @endforeach
                                         </div>
                                     </div>
                                     <div>

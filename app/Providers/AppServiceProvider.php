@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\DocumentsService;
 use App\Telegram\Commands\StartCommand;
 use Illuminate\Support\ServiceProvider;
 use Telegram\Bot\Api;
@@ -18,6 +19,10 @@ class AppServiceProvider extends ServiceProvider
             $telegram->addCommand(StartCommand::class);
 
             return $telegram;
+        });
+
+        $this->app->singleton(DocumentsService::class, function () {
+            return new DocumentsService();
         });
     }
 
